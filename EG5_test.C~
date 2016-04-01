@@ -1,0 +1,106 @@
+#define EG5_test_cxx
+#include "EG5_test.h"
+#include "TStyle.h"
+#include "TColor.h"
+#include "TF2.h"
+#include "TCanvas.h"
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <sstream>
+#include <string>
+#include <math.h>
+#include "TMath.h"
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TFile.h>
+#include <iomanip>
+#include <time.h>
+#include <TVector3.h>
+#include <TMath.h>
+#include "TCutG.h"
+#include <TLine.h>
+#include <TLorentzVector.h>
+#include <stdlib.h>
+#include <vector>
+#include <TGraphErrors.h>
+#include <TPaveStats.h>
+#include <cmath>
+#include "TRandom3.h"
+
+using namespace std;
+
+void EG5_test::Begin()
+{
+	hbvp = new TH2D("hbvp","Beta vs Momentum",150,0,4,50,0,1.1);
+	h1b = new TH1D("h1b","Beta",50,0,1.1);
+	h1p = new TH1D("h1p","Momentum",150,0,4);
+}
+
+void EG5_test::Loop()
+{
+//   In a ROOT session, you can do:
+//      root> .L EG5_test.C
+//      root> EG5_test t
+//      root> t.GetEntry(12); // Fill t data members with entry number 12
+//      root> t.Show();       // Show values of entry 12
+//      root> t.Show(16);     // Read and show values of entry 16
+//      root> t.Loop();       // Loop on all entries
+//
+
+//     This is the loop skeleton where:
+//    jentry is the global entry number in the chain
+//    ientry is the entry number in the current Tree
+//  Note that the argument to GetEntry must be:
+//    jentry for TChain::GetEntry
+//    ientry for TTree::GetEntry and TBranch::GetEntry
+//
+//       To read only selected branches, Insert statements like:
+// METHOD1:
+//    fChain->SetBranchStatus("*",0);  // disable all branches
+//    fChain->SetBranchStatus("branchname",1);  // activate branchname
+// METHOD2: replace line
+//    fChain->GetEntry(jentry);       //read all branches
+//by  b_branchname->GetEntry(ientry); //read only this branch
+	if (fChain == 0) return;
+	Long64_t nentries = fChain->GetEntriesFast();
+	Long64_t nbytes = 0, nb = 0;
+	for (Long64_t jentry=0; jentry < nentries; jentry++) {
+		if (jentry % 100 == 0) {cout << "Event: " << jentry << endl;}
+		Long64_t ientry = LoadTree(jentry);
+		if (ientry < 0) break;
+		nb = fChain->GetEntry(jentry);   nbytes += nb;
+		 // 		if (Cut(ientry) < 0) continue;
+		for( Int_t ipart=0; ipart < gpart; ipart++){
+			//cout << b[ipart] << endl;
+			hbvp->Fill( p[ipart] , b[ipart] );	
+			h1p->Fill(p[ipart]);
+			h1b->Fill(b[ipart]);
+			//		cout << "== Particle: " << ipart << endl;
+		}
+	}
+	// Let's open a TFile
+	TFile outfile("hbvp2.root","RECREATE");
+	//Write the histogram in the file
+	hbvp->Write();
+	// Close the file
+	outfile.Close();
+	return;
+}
+
+void EG5_test::drawHist()
+{
+   TCanvas *c1 = new TCanvas("c1","c1",600,400);
+   //gStyle->SetPalette(kBird);
+   c1->Divide(2,2);
+   c1->cd(0);
+   hbvp->Draw("colz");
+   c1->cd(1);
+   h1p->Draw("colz");
+   c1->cd(2);
+   h1b->Draw("colz");
+   c1->cd(3);
+   h1p->Draw("colz");
+}
